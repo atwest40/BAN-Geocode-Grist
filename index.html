@@ -1,27 +1,29 @@
-<!DOCTYPE html>
-<html>
+DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Grist Test Widget</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Postcode Polygon Widget</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        #result {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+    </style>
 </head>
 <body>
-  <h2>Grist Test Widget</h2>
-  <div id="output">Waiting for data...</div>
-
-  <script>
-    window.addEventListener("message", (event) => {
-      const data = event.data;
-      console.log("Grist message received:", data);
-
-      if (data.type === "grist") {
-        const record = data.records?.[0];
-        if (record && record.fields && record.fields.Address) {
-          document.getElementById("output").innerText = `Address: ${record.fields.Address}`;
-        } else {
-          document.getElementById("output").innerText = "No address found in record.";
-        }
-      }
-    });
-  </script>
+    <div>
+        <label for="address">Address:</label>
+        <input type="text" id="address" placeholder="Enter address">
+        <button id="fetch">Fetch Polygon</button>
+    </div>
+    <div id="result"></div>
+    <script src="widget.js"></script>
 </body>
 </html>
