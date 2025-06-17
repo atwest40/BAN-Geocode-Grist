@@ -2,39 +2,64 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Grist Geocoder Widget</title>
+  <title>Grist 2-Way Geocoder Widget</title>
   <style>
     body { font-family: sans-serif; padding: 1em; }
-    #results { margin-top: 1em; }
+    .field { margin-bottom: 0.5em; }
   </style>
 </head>
 <body>
-  <h2>Geocode Address (BAN API)</h2>
-  <div id="inputField">Waiting for address...</div>
-  <div id="results"></div>
+  <h2>BAN Geocoder (2-Way)</h2>
+  <div id="status">Waiting for address...</div>
+  <button id="geocodeBtn">Geocode & Save</button>
 
   <script>
-    window.addEventListener("message", async (event) => {
-      const address = event.data?.records?.[0]?.fields?.Address;
-      if (!address) return;
+    let grist = null;
+    let currentRecord = null;
 
-      document.getElementById('inputField').innerText = `Address: ${address}`;
-      const res = await fetch(`https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(address)}&limit=1`);
+    document.getElementById("geocodeBtn").addEventListener("click", async () => {
+      if (!currentRecord?.fields?.Address) return;
+
+      const address = currentRecord.fields.Address;
+      document.getElementById("status").innerText = `Geocoding: ${address}...`;
+
+      const url = `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(address)}&limit=1`;
+      const res = await fetch(url);
       const data = await res.json();
-
       const feature = data.features?.[0];
-      if (feature) {
-        const props = feature.properties;
-        document.getElementById('results').innerHTML = `
-          <strong>City:</strong> ${props.city}<br>
-          <strong>Postcode:</strong> ${props.postcode}<br>
-          <strong>INSEE code:</strong> ${props.citycode}<br>
-          <strong>Coordinates:</strong> ${feature.geometry.coordinates.join(', ')}
-        `;
-      } else {
-        document.getElementById('results').innerHTML = `<em>No results found.</em>`;
+
+      if (!feature) {
+        document.getElementById("status").innerText = "❌ No result found.";
+        return;
       }
-    }, false);
+
+      const props = feature.properties;
+      const [lon, lat] = feature.geometry.coordinates;
+
+      document.getElementById("status").innerText = `
+        ✅ Found: ${props.city}, ${props.postcode} (${props.citycode})
+      `;
+
+      // Update Grist record
+      grist.updateRecord(currentRecord.id, {
+        Latitude: lat,
+        Longitude: lon,
+        Postcode: props.postcode,
+        "INSEE Code": props.citycode
+      });
+    });
+
+    window.addEventListener("message", (event) => {
+      const data = event.data;
+      if (data.type === "grist") {
+        grist = data.api;
+        const rec = data.records?.[0];
+        if (rec) {
+          currentRecord = rec;
+          document.getElementById("status").innerText = `Selected: ${rec.fields.Address}`;
+        }
+      }
+    });
   </script>
 </body>
 </html>
