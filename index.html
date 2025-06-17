@@ -2,62 +2,19 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Grist 2-Way Geocoder Widget</title>
-  <style>
-    body { font-family: sans-serif; padding: 1em; }
-    .field { margin-bottom: 0.5em; }
-  </style>
+  <title>Test</title>
 </head>
 <body>
-  <h2>BAN Geocoder (2-Way)</h2>
-  <div id="status">Waiting for address...</div>
-  <button id="geocodeBtn">Geocode & Save</button>
+  <h3 id="out">Waiting for address...</h3>
 
   <script>
-    let grist = null;
-    let currentRecord = null;
-
-    document.getElementById("geocodeBtn").addEventListener("click", async () => {
-      if (!currentRecord?.fields?.Address) return;
-
-      const address = currentRecord.fields.Address;
-      document.getElementById("status").innerText = `Geocoding: ${address}...`;
-
-      const url = `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(address)}&limit=1`;
-      const res = await fetch(url);
-      const data = await res.json();
-      const feature = data.features?.[0];
-
-      if (!feature) {
-        document.getElementById("status").innerText = "❌ No result found.";
-        return;
-      }
-
-      const props = feature.properties;
-      const [lon, lat] = feature.geometry.coordinates;
-
-      document.getElementById("status").innerText = `
-        ✅ Found: ${props.city}, ${props.postcode} (${props.citycode})
-      `;
-
-      // Update Grist record
-      grist.updateRecord(currentRecord.id, {
-        Latitude: lat,
-        Longitude: lon,
-        Postcode: props.postcode,
-        "INSEE Code": props.citycode
-      });
-    });
-
     window.addEventListener("message", (event) => {
-      const data = event.data;
-      if (data.type === "grist") {
-        grist = data.api;
-        const rec = data.records?.[0];
-        if (rec) {
-          currentRecord = rec;
-          document.getElementById("status").innerText = `Selected: ${rec.fields.Address}`;
-        }
+      const rec = event.data?.records?.[0];
+      if (rec) {
+        const address = rec.fields.Address;
+        document.getElementById("out").innerText = address || "No address found.";
+      } else {
+        document.getElementById("out").innerText = "No record received.";
       }
     });
   </script>
