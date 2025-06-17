@@ -2,83 +2,23 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Grist Geocode → Commune Polygon</title>
-  <link rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <style>
-    body { font-family: sans-serif; margin: 0; padding: 0; }
-    #map { height: 300px; }
-    .info { padding: 0.5em; }
-  </style>
+  <title>Grist Test Widget</title>
 </head>
 <body>
-  <div class="info">
-    <strong>Status:</strong> <span id="status">Waiting for address...</span><br>
-    <strong>INSEE:</strong> <span id="insee">–</span>
-  </div>
-  <div id="map"></div>
+  <h2>Grist Test Widget</h2>
+  <div id="output">Waiting for data...</div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    let gristApi = null;
-    let currentRec = null;
-    let map = L.map('map').setView([46.5, 2.5], 5);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19
-    }).addTo(map);
-    let polygonLayer = L.geoJSON().addTo(map);
+    window.addEventListener("message", (event) => {
+      const data = event.data;
+      console.log("Grist message received:", data);
 
-    async function geocodeAndFetchPolygon(address) {
-      if (!address) {
-        document.getElementById('status').innerText = "No address.";
-        return;
-      }
-      document.getElementById('status').innerText = `Geocoding “${address}”…`;
-
-      // 1️⃣ Geocode via BAN
-      const geocodeUrl = `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(address)}&limit=1`;
-      const geoRes = await fetch(geocodeUrl);
-      const geoJson = await geoRes.json();
-      const feat = geoJson.features?.[0];
-      if (!feat) {
-        document.getElementById('status').innerText = "❌ Address not found.";
-        return;
-      }
-      const insee = feat.properties.citycode;
-      document.getElementById('insee').innerText = insee;
-      document.getElementById('status').innerText = `INSEE: ${insee}, fetching polygon…`;
-
-      // 2️⃣ Fetch polygon from GeoFrance
-      const polyUrl = `https://geo.api.gouv.fr/communes/${insee}?format=geojson&geometry=contour`;
-      const polyRes = await fetch(polyUrl);
-      const polyJson = await polyRes.json();
-
-      // 3️⃣ Draw polygon on the map
-      polygonLayer.clearLayers();
-      polygonLayer.addData(polyJson);
-      map.fitBounds(polygonLayer.getBounds());
-
-      // 4️⃣ Write back to Grist (store the GeoJSON string)
-      if (gristApi && currentRec) {
-        gristApi.updateRecord(currentRec.id, {
-          insee_polygon: JSON.stringify(polyJson.geometry)
-        });
-      }
-
-      document.getElementById('status').innerText = "✅ Polygon loaded.";
-    }
-
-    // 🎯 Grist integration: receive record data
-    window.addEventListener('message', (ev) => {
-      const msg = ev.data;
-      if (msg.type === 'grist') {
-        gristApi = msg.api;
-        currentRec = msg.records?.[0] || null;
-        const addr = currentRec?.fields?.Address;
-        if (addr) {
-          geocodeAndFetchPolygon(addr);
+      if (data.type === "grist") {
+        const record = data.records?.[0];
+        if (record && record.fields && record.fields.Address) {
+          document.getElementById("output").innerText = `Address: ${record.fields.Address}`;
         } else {
-          document.getElementById('status').innerText = "Select a row with an address.";
+          document.getElementById("output").innerText = "No address found in record.";
         }
       }
     });
