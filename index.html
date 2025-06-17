@@ -2,19 +2,24 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Test</title>
+  <title>Grist Test Widget</title>
 </head>
 <body>
-  <h3 id="out">Waiting for address...</h3>
+  <h2>Grist Test Widget</h2>
+  <div id="output">Waiting for data...</div>
 
   <script>
     window.addEventListener("message", (event) => {
-      const rec = event.data?.records?.[0];
-      if (rec) {
-        const address = rec.fields.Address;
-        document.getElementById("out").innerText = address || "No address found.";
-      } else {
-        document.getElementById("out").innerText = "No record received.";
+      const data = event.data;
+      console.log("Grist message received:", data);
+
+      if (data.type === "grist") {
+        const record = data.records?.[0];
+        if (record && record.fields && record.fields.Address) {
+          document.getElementById("output").innerText = `Address: ${record.fields.Address}`;
+        } else {
+          document.getElementById("output").innerText = "No address found in record.";
+        }
       }
     });
   </script>
